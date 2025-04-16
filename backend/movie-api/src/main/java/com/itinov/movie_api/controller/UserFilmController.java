@@ -17,8 +17,26 @@ public class UserFilmController {
 
     @PostMapping("/{userId}/favorites/{filmId}")
     public ResponseEntity<Void> addFilmToFavorite(@PathVariable Long userId, @PathVariable Long filmId) {
+        if (userId == null || filmId == null) {
+            return ResponseEntity.badRequest().build(); // Gérer les valeurs nulles ici
+        }
         try {
             userFilmService.addFilmToFavorite(userId, filmId);
+            return ResponseEntity.ok().build();
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/{userId}/favorites/{filmId}")
+    public ResponseEntity<Void> removeFilmFromFavorite(@PathVariable Long userId, @PathVariable Long filmId) {
+        if (userId == null || filmId == null) {
+            return ResponseEntity.badRequest().build(); // Gérer les valeurs nulles ici
+        }
+        try {
+            userFilmService.removeFilmFromFavorite(userId, filmId);
             return ResponseEntity.ok().build();
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();

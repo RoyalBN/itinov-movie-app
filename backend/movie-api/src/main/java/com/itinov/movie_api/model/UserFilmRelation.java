@@ -27,6 +27,6 @@ public class UserFilmRelation {
     private Film film;
 
     private boolean isFavorite;
-    private boolean isSeen;
-    private LocalDateTime seenAt;
+    private boolean hasBeenWatched;
+    private LocalDateTime watchedAt;
 }

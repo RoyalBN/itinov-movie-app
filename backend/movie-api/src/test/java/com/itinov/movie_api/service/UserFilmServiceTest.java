@@ -14,6 +14,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import jakarta.persistence.EntityNotFoundException;
+
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,67 +56,90 @@ public class UserFilmServiceTest {
     }
 
     @Test
-    @DisplayName("[N] Add a film to my favorite for non-existing relation")
-    void should_add_a_film_to_my_favorite_for_non_existing_relation() {
+    @DisplayName("[N] Add a film to favorite when relation does not exist")
+    void should_add_film_to_favorite_when_relation_does_not_exist() {
         // Arrange
-        UserFilmRelation expectedRelation = UserFilmRelation.builder()
-                .id(10L)
-                .user(user)
-                .film(film)
-                .isFavorite(true)
-                .hasBeenWatched(false)
-                .build();
-
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(filmRepository.findById(film.getId())).thenReturn(Optional.of(film));
-        when(relationRepository.save(any(UserFilmRelation.class))).thenReturn(expectedRelation);
+        when(relationRepository.findByUserAndFilm(user, film)).thenReturn(Optional.empty());
+        when(relationRepository.save(any(UserFilmRelation.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         userFilmService.addFilmToFavorite(user.getId(), film.getId());
 
         // Assert
-        ArgumentCaptor<UserFilmRelation> captor = ArgumentCaptor.forClass(UserFilmRelation.class);
-        verify(relationRepository, times(1)).save(captor.capture());
-
-        UserFilmRelation relationSaved = captor.getValue();
-        assertThat(relationSaved.getUser()).isEqualTo(user);
-        assertThat(relationSaved.getFilm()).isEqualTo(film);
-        assertThat(relationSaved.isFavorite()).isTrue();
-        assertThat(relationSaved.isHasBeenWatched()).isFalse();
+        ArgumentCaptor<UserFilmRelation> relationCaptor = ArgumentCaptor.forClass(UserFilmRelation.class);
+        verify(relationRepository).save(relationCaptor.capture());
+        
+        UserFilmRelation savedRelation = relationCaptor.getValue();
+        assertThat(savedRelation.getUser()).isEqualTo(user);
+        assertThat(savedRelation.getFilm()).isEqualTo(film);
+        assertThat(savedRelation.isFavorite()).isTrue();
+        assertThat(savedRelation.isHasBeenWatched()).isFalse();
     }
 
     @Test
-    @DisplayName("[N] Update isFavorite to true for existing relation")
-    void should_update_isFavorite_to_true_if_relation_already_exists() {
+    @DisplayName("[N] Toggle favorite status for existing relation")
+    void should_toggle_favorite_status_for_existing_relation() {
         // Arrange
         UserFilmRelation existingRelation = UserFilmRelation.builder()
-                .id(11L)
+                .id(1L)
                 .user(user)
                 .film(film)
-                .isFavorite(false)
+                .isFavorite(true)  // Déjà en favori
                 .hasBeenWatched(true)
                 .build();
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(filmRepository.findById(film.getId())).thenReturn(Optional.of(film));
         when(relationRepository.findByUserAndFilm(user, film)).thenReturn(Optional.of(existingRelation));
-        when(relationRepository.save(any(UserFilmRelation.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(relationRepository.save(any(UserFilmRelation.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // Act
         userFilmService.addFilmToFavorite(user.getId(), film.getId());
 
         // Assert
-        ArgumentCaptor<UserFilmRelation> captor = ArgumentCaptor.forClass(UserFilmRelation.class);
-        verify(relationRepository).save(captor.capture());
-        UserFilmRelation saved = captor.getValue();
-
-        assertThat(saved.isFavorite()).isTrue();
-        assertThat(saved.getUser()).isEqualTo(user);
-        assertThat(saved.getFilm()).isEqualTo(film);
-        assertThat(saved.isHasBeenWatched()).isTrue();
+        ArgumentCaptor<UserFilmRelation> relationCaptor = ArgumentCaptor.forClass(UserFilmRelation.class);
+        verify(relationRepository).save(relationCaptor.capture());
+        
+        UserFilmRelation savedRelation = relationCaptor.getValue();
+        assertThat(savedRelation.isFavorite()).isFalse();  // Devrait être basculé à false
+        assertThat(savedRelation.isHasBeenWatched()).isTrue();  // Ne devrait pas changer
     }
 
-    // [N] Throw IllegalArgumentException if userId or filmId is null
+    @Test
+    @DisplayName("[E] Cannot add to favorite when user does not exist")
+    void should_throw_exception_when_user_does_not_exist() {
+        // Arrange
+        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
+
+        // Act
+        Throwable thrown = catchThrowable(() -> userFilmService.addFilmToFavorite(user.getId(), film.getId()));
+
+        // Assert
+        assertThat(thrown)
+            .isInstanceOf(EntityNotFoundException.class)
+            .hasMessage("User not found with id: " + user.getId());
+        verify(relationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("[E] Cannot add to favorite when film does not exist")
+    void should_throw_exception_when_film_does_not_exist() {
+        // Arrange
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(filmRepository.findById(film.getId())).thenReturn(Optional.empty());
+
+        // Act
+        Throwable thrown = catchThrowable(() -> userFilmService.addFilmToFavorite(user.getId(), film.getId()));
+
+        // Assert
+        assertThat(thrown)
+            .isInstanceOf(EntityNotFoundException.class)
+            .hasMessage("Film not found with id: " + film.getId());
+        verify(relationRepository, never()).save(any());
+    }
+
     @Test
     @DisplayName("[N] Throw IllegalArgumentException if userId or filmId is null")
     void should_throw_exception_if_user_id_or_film_id_is_null() throws Exception {
@@ -130,12 +155,4 @@ public class UserFilmServiceTest {
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("User ID and film ID must not be null");
     }
-
-    // [E] Throw Exception if user not found
-
-    // [E] Throw Exception if film not found
-
-    // [E] Throw Exception if fields are not valid
-
-
 }

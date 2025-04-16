@@ -30,14 +30,12 @@ public class UserFilmService {
             throw new IllegalArgumentException("User ID and film ID must not be null");
         }
 
-        User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found"));
-        Film film = filmRepository.findById(filmId).orElseThrow(() -> new EntityNotFoundException("Film not found"));
-
-        Optional<UserFilmRelation> existingRelation = relationRepository.findByUserAndFilm(user, film);
+        User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+        Film film = filmRepository.findById(filmId).orElseThrow(() -> new EntityNotFoundException("Film not found with id: " + filmId));
 
         UserFilmRelation relation = relationRepository.findByUserAndFilm(user, film)
                 .map(existing -> {
-                    existing.setFavorite(!existing.isFavorite());
+                    existing.setFavorite(!existing.isFavorite()); // Toggle
                     return existing;
                 })
                 .orElseGet(() -> UserFilmRelation.builder()

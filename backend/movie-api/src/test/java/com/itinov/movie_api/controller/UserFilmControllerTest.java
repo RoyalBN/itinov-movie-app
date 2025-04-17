@@ -13,11 +13,12 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import jakarta.persistence.EntityNotFoundException;
 
+import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserFilmController.class)
 class UserFilmControllerTest {
@@ -25,6 +26,7 @@ class UserFilmControllerTest {
     private static final Long EXISTING_USER_ID = 42L;
     private static final Long EXISTING_FILM_ID = 123L;
     private static final Long NON_EXISTING_ID = 999L;
+    public static final String BASE_URL = "/api/users/{userId}/favorites/{filmId}";
 
     @Autowired
     private MockMvc mockMvc;
@@ -39,7 +41,7 @@ class UserFilmControllerTest {
     @DisplayName("[N] Add a film to favorite")
     void should_add_film_to_favorite() throws Exception {
         // Act & Assert
-        mockMvc.perform(post("/api/users/{userId}/favorites/{filmId}", EXISTING_USER_ID, EXISTING_FILM_ID)
+        mockMvc.perform(post(BASE_URL, EXISTING_USER_ID, EXISTING_FILM_ID)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
@@ -54,7 +56,7 @@ class UserFilmControllerTest {
                 .when(userFilmService).addFilmToFavorite(anyLong(), anyLong());
 
         // Act & Assert
-        mockMvc.perform(post("/api/users/{userId}/favorites/{filmId}", NON_EXISTING_ID, EXISTING_FILM_ID)
+        mockMvc.perform(post(BASE_URL, NON_EXISTING_ID, EXISTING_FILM_ID)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
@@ -70,7 +72,7 @@ class UserFilmControllerTest {
                 .addFilmToFavorite(EXISTING_USER_ID, NON_EXISTING_ID);
 
         // Act & Assert
-        mockMvc.perform(post("/api/users/{userId}/favorites/{filmId}", EXISTING_USER_ID, NON_EXISTING_ID)
+        mockMvc.perform(post(BASE_URL, EXISTING_USER_ID, NON_EXISTING_ID)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
@@ -85,41 +87,122 @@ class UserFilmControllerTest {
                 .when(userFilmService).addFilmToFavorite(NON_EXISTING_ID, NON_EXISTING_ID);
 
         // Act & Assert
-        mockMvc.perform(post("/api/users/{userId}/favorites/{filmId}", NON_EXISTING_ID, NON_EXISTING_ID)
+        mockMvc.perform(post(BASE_URL, NON_EXISTING_ID, NON_EXISTING_ID)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
         verify(userFilmService, times(1)).addFilmToFavorite(anyLong(), anyLong());
     }
 
-    // [N] Remove a film from favorite
     @Test
     @DisplayName("[N] Remove a film from favorite")
     void should_remove_film_from_favorite() throws Exception {
         // Act & Assert
-        mockMvc.perform(put("/api/users/{userId}/favorites/{filmId}", EXISTING_USER_ID, EXISTING_FILM_ID)
+        mockMvc.perform(put(BASE_URL, EXISTING_USER_ID, EXISTING_FILM_ID)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
         verify(userFilmService).removeFilmFromFavorite(EXISTING_USER_ID, EXISTING_FILM_ID);
     }
 
-    // [E] Throw exception when user is null
     @Test
-    @DisplayName("[E] Throw exception when user is null")
-    void should_throw_exception_when_user_is_null() throws Exception {
-        // Arrange
-        //doThrow(new IllegalArgumentException("User ID and film ID must not be null"))
-        //        .when(userFilmService).removeFilmFromFavorite(null, null);
-
+    @DisplayName("[E] Throw exception when userId is invalid")
+    void should_throw_exception_when_userId_is_invalid() throws Exception {
         // Act & Assert
-        mockMvc.perform(put("/api/users/{userId}/favorites/{filmId}", null, null)
+        mockMvc.perform(put(BASE_URL, "abc", EXISTING_FILM_ID)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
         verify(userFilmService, never()).removeFilmFromFavorite(anyLong(), anyLong());
     }
 
-    // [E] Throw exception when film is null
-    // [E] Throw exception when no relation found
+    @Test
+    @DisplayName("[E] Throw exception when filmId is invalid")
+    void should_throw_exception_when_filmId_is_invalid() throws Exception {
+        // Act & Assert
+        mockMvc.perform(put(BASE_URL, EXISTING_USER_ID, "abc")
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+
+        verify(userFilmService, never()).removeFilmFromFavorite(anyLong(), anyLong());
+    }
+
+    @Test
+    @DisplayName("[E] Throw exception when no entity found")
+    void should_throw_exception_when_no_entity_found() throws Exception {
+        // Arrange
+        doThrow(new EntityNotFoundException("User not found with id: " + NON_EXISTING_ID))
+                .when(userFilmService).removeFilmFromFavorite(NON_EXISTING_ID, EXISTING_FILM_ID);
+
+        // Act
+        mockMvc.perform(put(BASE_URL, NON_EXISTING_ID, EXISTING_FILM_ID)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+
+        // Assert
+        verify(userFilmService, times(1)).removeFilmFromFavorite(NON_EXISTING_ID, EXISTING_FILM_ID);
+    }
+
+    @Test
+    @DisplayName("[E] Throw exception when invalid request")
+    void should_throw_exception_when_invalid_request() throws Exception {
+        // Arrange
+        doThrow(new IllegalArgumentException("Invalid request"))
+                .when(userFilmService).removeFilmFromFavorite(any(), any());
+
+        // Act
+        mockMvc.perform(put(BASE_URL, NON_EXISTING_ID, NON_EXISTING_ID)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+
+        // Assert
+        verify(userFilmService, times(1)).removeFilmFromFavorite(any(), any());
+    }
+
+    @Test
+    @DisplayName("[E] Throw exception when internal error")
+    void should_throw_exception_when_internal_error() throws Exception {
+        // Arrange
+        doThrow(new RuntimeException("Unexpected error"))
+                .when(userFilmService).removeFilmFromFavorite(anyLong(), anyLong());
+
+        // Act
+        mockMvc.perform(put("/api/users/1/favorites/1")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
+
+        // Assert
+        verify(userFilmService, times(1)).removeFilmFromFavorite(anyLong(), anyLong());
+    }
+
+    @Test
+    @DisplayName("[E] Throw exception when userId is negative")
+    void should_throw_exception_when_userId_is_negative() throws Exception {
+        // Act & Assert
+        mockMvc.perform(put(BASE_URL, -1, 1)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpectAll(
+                        status().isBadRequest(),
+                        jsonPath("$.code").value("VALIDATION_ERROR"),
+                        jsonPath("$.message").value(containsString("ID must be positive"))
+                );
+
+        verify(userFilmService, never()).removeFilmFromFavorite(any(), any());
+    }
+
+    @Test
+    @DisplayName("[E] Return 400 when filmId is negative")
+    void should_return_400_when_filmId_is_negative() throws Exception {
+        // Act & Assert
+        mockMvc.perform(put(BASE_URL, EXISTING_USER_ID, -1)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpectAll(
+                        status().isBadRequest(),
+                        jsonPath("$.code").value("VALIDATION_ERROR"),
+                        jsonPath("$.message").value(containsString("ID must be positive"))
+                );
+
+        verify(userFilmService, never()).removeFilmFromFavorite(any(), any());
+    }
+
 }

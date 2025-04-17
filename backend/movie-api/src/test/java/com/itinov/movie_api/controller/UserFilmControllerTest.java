@@ -1,5 +1,7 @@
 package com.itinov.movie_api.controller;
 
+import com.itinov.movie_api.dto.FilmDTO;
+import com.itinov.movie_api.model.FilmSortBy;
 import com.itinov.movie_api.service.UserFilmService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -7,18 +9,23 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*; // pour .status(), .jsonPath(), etc.
+
+
 import jakarta.persistence.EntityNotFoundException;
+
+import java.time.LocalDate;
+import java.util.List;
 
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserFilmController.class)
 class UserFilmControllerTest {
@@ -26,7 +33,11 @@ class UserFilmControllerTest {
     private static final Long EXISTING_USER_ID = 42L;
     private static final Long EXISTING_FILM_ID = 123L;
     private static final Long NON_EXISTING_ID = 999L;
+
     public static final String BASE_URL = "/api/users/{userId}/favorites/{filmId}";
+
+    private FilmDTO film1;
+    private FilmDTO film2;
 
     @Autowired
     private MockMvc mockMvc;
@@ -36,6 +47,30 @@ class UserFilmControllerTest {
 
     @MockitoBean
     private UserFilmService userFilmService;
+
+    @BeforeEach
+    void setUp() {
+        film1 = FilmDTO.builder()
+                .id(1L)
+                .title("Inception")
+                .rating(8.8)
+                .releaseDate(LocalDate.of(2010, 7, 16))
+                .posterUrl("url1")
+                .isFavorite(true)
+                .hasBeenWatched(false)
+                .build();
+
+        film2 = FilmDTO.builder()
+                .id(2L)
+                .title("Interstellar")
+                .rating(9.0)
+                .releaseDate(LocalDate.of(2014, 11, 7))
+                .posterUrl("url2")
+                .isFavorite(true)
+                .hasBeenWatched(true)
+                .build();
+    }
+
 
     @Test
     @DisplayName("[N] Add a film to favorite")
@@ -205,4 +240,136 @@ class UserFilmControllerTest {
         verify(userFilmService, never()).removeFilmFromFavorite(any(), any());
     }
 
+    @Test
+    @DisplayName("[N] Return list of favorite films sorted by release date (ASC)")
+    void should_return_list_of_favorite_films_sorted_by_release_date_asc() throws Exception {
+        // Arrange
+        Long userId = EXISTING_USER_ID;
+        List<FilmDTO> expectedResponse = List.of(film1, film2);
+
+        when(userFilmService.getFavoriteFilmsSorted(userId, FilmSortBy.RELEASE_DATE, Sort.Direction.ASC))
+                .thenReturn(expectedResponse);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/users/{userId}/favorites", userId)
+                        .param("sortBy", "RELEASE_DATE")
+                        .param("direction", "ASC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$[0].title").value("Inception"))
+                .andExpect(jsonPath("$[1].title").value("Interstellar"));
+    }
+
+    @Test
+    @DisplayName("[N] Return list of favorite films sorted by release date (DESC)")
+    void should_return_list_of_favorite_films_sorted_by_release_date_desc() throws Exception {
+        // Arrange
+        Long userId = EXISTING_USER_ID;
+        List<FilmDTO> expectedResponse = List.of(film2, film1);
+
+        when(userFilmService.getFavoriteFilmsSorted(userId, FilmSortBy.RELEASE_DATE, Sort.Direction.DESC))
+                .thenReturn(expectedResponse);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/users/{userId}/favorites", userId)
+                        .param("sortBy", "RELEASE_DATE")
+                        .param("direction", "DESC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$[0].title").value("Interstellar"))
+                .andExpect(jsonPath("$[1].title").value("Inception"));
+    }
+
+    @Test
+    @DisplayName("[N] Return list of favorite films sorted by rating date (ASC)")
+    void should_return_list_of_favorite_films_sorted_by_rating_asc() throws Exception {
+        // Arrange
+        Long userId = EXISTING_USER_ID;
+        List<FilmDTO> expectedResponse = List.of(film1, film2);
+
+        when(userFilmService.getFavoriteFilmsSorted(userId, FilmSortBy.RATING, Sort.Direction.ASC))
+                .thenReturn(expectedResponse);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/users/{userId}/favorites", userId)
+                        .param("sortBy", "RATING")
+                        .param("direction", "ASC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$[0].title").value("Inception"))
+                .andExpect(jsonPath("$[1].title").value("Interstellar"));
+    }
+
+    @Test
+    @DisplayName("[N] Return list of favorite films sorted by rating date (DESC)")
+    void should_return_list_of_favorite_films_sorted_by_rating_desc() throws Exception {
+        // Arrange
+        Long userId = EXISTING_USER_ID;
+        List<FilmDTO> expectedResponse = List.of(film2, film1);
+
+        when(userFilmService.getFavoriteFilmsSorted(userId, FilmSortBy.RATING, Sort.Direction.DESC))
+                .thenReturn(expectedResponse);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/users/{userId}/favorites", userId)
+                        .param("sortBy", "RATING")
+                        .param("direction", "DESC"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size()").value(2))
+                .andExpect(jsonPath("$[0].title").value("Interstellar"))
+                .andExpect(jsonPath("$[1].title").value("Inception"));
+    }
+
+    @Test
+    @DisplayName("[E] Should return 400 Bad Request for invalid enum value")
+    void should_return_bad_request_for_invalid_enum_value() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get("/api/users/1/favorites")
+                        .param("sortBy", "UNKNOWN"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("[N] Mark a film as watched")
+    void should_mark_a_film_as_watched() throws Exception {
+        // Act & Assert
+        mockMvc.perform(patch("/api/users/{userId}/films/{filmId}/watched", EXISTING_USER_ID, EXISTING_FILM_ID)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(userFilmService).toggleFilmAsWatched(EXISTING_USER_ID, EXISTING_FILM_ID);
+    }
+
+    @Test
+    @DisplayName("[N] Mark a film as unwatched")
+    void should_mark_a_film_as_unwatched() throws Exception {
+        // Act & Assert
+        mockMvc.perform(patch("/api/users/{userId}/films/{filmId}/watched", EXISTING_USER_ID, EXISTING_FILM_ID)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(userFilmService).toggleFilmAsWatched(EXISTING_USER_ID, EXISTING_FILM_ID);
+    }
+
+    @Test
+    @DisplayName("[N] Return list of watched films")
+    void should_return_list_of_watched_films() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get("/api/users/{userId}/films/watched", EXISTING_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(userFilmService).getWatchedFilms(EXISTING_USER_ID);
+    }
+
+    @Test
+    @DisplayName("[N] Return list of unwatched films")
+    void should_return_list_of_unwatched_films() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get("/api/users/{userId}/films/unwatched", EXISTING_USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(userFilmService).getUnwatchedFilms(EXISTING_USER_ID);
+    }
 }

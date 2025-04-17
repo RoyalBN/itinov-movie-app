@@ -7,9 +7,11 @@ import com.itinov.movie_api.repository.FilmRepository;
 import com.itinov.movie_api.repository.UserFilmRelationRepository;
 import com.itinov.movie_api.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@Service
 public class UserFilmService {
 
     private UserRepository userRepository;
@@ -48,4 +50,20 @@ public class UserFilmService {
 
         relationRepository.save(relation);
     }
+
+    public void removeFilmFromFavorite(Long userId, Long filmId) {
+        if (userId == null || filmId == null) {
+            throw new IllegalArgumentException("User ID and film ID must not be null");
+        }
+
+        User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+        Film film = filmRepository.findById(filmId).orElseThrow(() -> new EntityNotFoundException("Film not found with id: " + filmId));
+
+        UserFilmRelation relation = relationRepository.findByUserAndFilm(user, film)
+                .orElseThrow(() -> new EntityNotFoundException("Relation not found for user ID: " + userId + " and film ID: " + filmId));
+
+        relation.setFavorite(false);
+        relationRepository.save(relation);
+    }
+
 }

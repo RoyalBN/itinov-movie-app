@@ -356,4 +356,64 @@ public class UserFilmServiceTest {
         assertThat(result.get(1).getTitle()).isEqualTo("Film A");
     }
 
+    @DisplayName("[N] Mark a film as watched")
+    @Test
+    void should_mark_a_film_as_watched() {
+        // Arrange
+        Long userId = 1L;
+        Long filmId = 10L;
+        User user = User.builder().id(userId).build();
+        Film film = Film.builder().id(filmId).build();
+
+        UserFilmRelation relation = UserFilmRelation.builder()
+                .user(user)
+                .film(film)
+                .hasBeenWatched(false)
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(filmRepository.findById(filmId)).thenReturn(Optional.of(film));
+        when(relationRepository.findByUserAndFilm(user, film)).thenReturn(Optional.of(relation));
+
+        // Act
+        userFilmService.markFilmAsWatched(userId, filmId);
+
+        // Assert
+        assertThat(relation.isHasBeenWatched()).isTrue();
+        assertThat(relation.getWatchedAt()).isNotNull();
+        verify(relationRepository, times(1)).save(relation);
+    }
+
+    @DisplayName("[N] Mark a film as unwatched")
+    @Test
+    void should_mark_a_film_as_unwatched() {
+        // Arrange
+        Long userId = 1L;
+        Long filmId = 10L;
+        User user = User.builder().id(userId).build();
+        Film film = Film.builder().id(filmId).build();
+
+        UserFilmRelation relation = UserFilmRelation.builder()
+                .user(user)
+                .film(film)
+                .hasBeenWatched(true)
+                .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(filmRepository.findById(filmId)).thenReturn(Optional.of(film));
+        when(relationRepository.findByUserAndFilm(user, film)).thenReturn(Optional.of(relation));
+
+        // Act
+        userFilmService.markFilmAsWatched(userId, filmId);
+
+        // Assert
+        assertThat(relation.isHasBeenWatched()).isFalse();
+        assertThat(relation.getWatchedAt()).isNull();
+        verify(relationRepository, times(1)).save(relation);
+    }
+
+    // [N] Return list of watched films
+
+    // [N] Return list of unwatched films
+
 }

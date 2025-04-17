@@ -12,6 +12,7 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -71,24 +72,6 @@ public class UserFilmService {
         relationRepository.save(relation);
     }
 
-    //public List<FilmDTO> getFavoriteFilmsSortedByReleaseDate(Long userId) {
-    //    User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
-    //    List<UserFilmRelation> relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateAsc(user);
-    //
-    //    return relations.stream()
-    //            .map(this::mapToFilmDTO)
-    //            .collect(Collectors.toList());
-    //
-    //}
-    //
-    //public List<FilmDTO> getFavoriteFilmsSortedByRatingDesc(Long userId) {
-    //    User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
-    //    List<UserFilmRelation> relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_RatingDesc(user);
-    //
-    //    return relations.stream()
-    //            .map(this::mapToFilmDTO)
-    //            .collect(Collectors.toList());
-    //}
 
     public List<FilmDTO> getFavoriteFilmsSorted(Long userId, FilmSortBy sortBy, Sort.Direction direction) {
         User user = userRepository.findById(userId)
@@ -126,4 +109,16 @@ public class UserFilmService {
     }
 
 
+    public void markFilmAsWatched(Long userId, Long filmId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+        Film film = filmRepository.findById(filmId).orElseThrow(() -> new EntityNotFoundException("Film not found with id: " + filmId));
+
+        UserFilmRelation relation = relationRepository.findByUserAndFilm(user, film)
+                .orElseThrow(() -> new EntityNotFoundException("Relation not found for user ID: " + userId + " and film ID: " + filmId));
+
+        boolean newWatchStatus = relation.isHasBeenWatched();
+        relation.setHasBeenWatched(!newWatchStatus);
+        relation.setWatchedAt(newWatchStatus ? null : LocalDateTime.now());
+        relationRepository.save(relation);
+    }
 }

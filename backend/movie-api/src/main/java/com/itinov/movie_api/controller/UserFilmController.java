@@ -64,4 +64,13 @@ public class UserFilmController {
         return ResponseEntity.ok(result);
     }
 
+    @PatchMapping("/{userId}/films/{filmId}/watched")
+    public ResponseEntity<Void> markFilmAsWatched(
+            @PathVariable @Positive(message = "ID must be positive") Long userId,
+            @PathVariable @Positive(message = "ID must be positive") Long filmId
+    ) {
+        userFilmService.markFilmAsWatched(userId, filmId);
+        return ResponseEntity.ok().build();
+    }
+
 }

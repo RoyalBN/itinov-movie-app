@@ -13,7 +13,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*; // pour .status(), .jsonPath(), etc.
 
 
@@ -25,8 +26,6 @@ import java.util.List;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserFilmController.class)
@@ -330,6 +329,28 @@ class UserFilmControllerTest {
         mockMvc.perform(get("/api/users/1/favorites")
                         .param("sortBy", "UNKNOWN"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("[N] Mark a film as watched")
+    void should_mark_a_film_as_watched() throws Exception {
+        // Act & Assert
+        mockMvc.perform(patch("/api/users/{userId}/films/{filmId}/watched", EXISTING_USER_ID, EXISTING_FILM_ID)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(userFilmService).markFilmAsWatched(EXISTING_USER_ID, EXISTING_FILM_ID);
+    }
+
+    @Test
+    @DisplayName("[N] Mark a film as unwatched")
+    void should_mark_a_film_as_unwatched() throws Exception {
+        // Act & Assert
+        mockMvc.perform(patch("/api/users/{userId}/films/{filmId}/watched", EXISTING_USER_ID, EXISTING_FILM_ID)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(userFilmService).markFilmAsWatched(EXISTING_USER_ID, EXISTING_FILM_ID);
     }
 
 }

@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -174,6 +175,48 @@ class UserFilmRelationRepositoryTest {
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getFilm().getTitle()).isEqualTo("Film B");
         assertThat(result.get(1).getFilm().getTitle()).isEqualTo("Film A");
+    }
+
+    @Test
+    @DisplayName("[N] Mark a film as watched")
+    void should_mark_a_film_as_watched() {
+        // Arrange
+        persistRelation(true, false, film1);
+
+        // Act
+        Optional<UserFilmRelation> foundRelation = repository.findByUserAndFilm(user, film1);
+        foundRelation.get().setHasBeenWatched(true);
+        foundRelation.get().setWatchedAt(LocalDateTime.now());
+        repository.save(foundRelation.get());
+        entityManager.flush();
+        entityManager.clear();
+
+        // Assert
+        Optional<UserFilmRelation> updatedRelation = repository.findByUserAndFilm(user, film1);
+        assertThat(updatedRelation.get().isFavorite()).isTrue();
+        assertThat(updatedRelation.get().isHasBeenWatched()).isTrue();
+        assertThat(updatedRelation.get().getWatchedAt()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("[N] Mark a film as unwatched")
+    void should_mark_a_film_as_unwatched() {
+        // Arrange
+        persistRelation(true, true, film1);
+
+        // Act
+        Optional<UserFilmRelation> foundRelation = repository.findByUserAndFilm(user, film1);
+        foundRelation.get().setHasBeenWatched(false);
+        foundRelation.get().setWatchedAt(null);
+        repository.save(foundRelation.get());
+        entityManager.flush();
+        entityManager.clear();
+
+        // Assert
+        Optional<UserFilmRelation> updatedRelation = repository.findByUserAndFilm(user, film1);
+        assertThat(updatedRelation.get().isFavorite()).isTrue();
+        assertThat(updatedRelation.get().isHasBeenWatched()).isFalse();
+        assertThat(updatedRelation.get().getWatchedAt()).isNull();
     }
 
 }

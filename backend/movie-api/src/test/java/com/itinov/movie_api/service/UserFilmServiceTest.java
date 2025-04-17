@@ -44,8 +44,9 @@ public class UserFilmServiceTest {
     @BeforeEach
     void setUp() {
         userFilmService = new UserFilmService(userRepository, filmRepository, relationRepository);
-        user = User.builder().id(1L).username("Peter").build();
-        film = Film.builder().id(1L).title("Star Wars").rating(8.5).build();
+        user = User.builder().id(4L).username("alice_movie_lover").build();
+        film = Film.builder().id(1L).title("Inception").rating(8.5).build();
+
         userFilmRelation = UserFilmRelation.builder()
                 .id(1L)
                 .user(user)
@@ -154,5 +155,64 @@ public class UserFilmServiceTest {
         assertThat(thrown)
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessage("User ID and film ID must not be null");
+    }
+
+    @Test
+    @DisplayName("[N] Remove a film from favorite")
+    void should_remove_film_from_favorite() {
+        // Arrange
+        UserFilmRelation relation = UserFilmRelation.builder()
+                .user(user)
+                .film(film)
+                .isFavorite(true)
+                .hasBeenWatched(false)
+                .build();
+
+        when(userRepository.findById(4L)).thenReturn(Optional.of(user));
+        when(filmRepository.findById(1L)).thenReturn(Optional.of(film));
+        when(relationRepository.findByUserAndFilm(user, film)).thenReturn(Optional.of(relation));
+
+        // Act
+        userFilmService.removeFilmFromFavorite(user.getId(), film.getId());
+
+        // Assert
+        assertThat(relation.isFavorite()).isFalse();
+        verify(relationRepository, times(1)).save(relation);
+    }
+
+    @Test
+    @DisplayName("[N] Throw exception when relation not found")
+    void should_throw_exception_when_relation_not_found() {
+        // Arrange
+        when(userRepository.findById(4L)).thenReturn(Optional.of(user));
+        when(filmRepository.findById(1L)).thenReturn(Optional.of(film));
+        when(relationRepository.findByUserAndFilm(user, film)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        Throwable thrown = catchThrowable(() -> userFilmService.removeFilmFromFavorite(user.getId(), film.getId()));
+
+        assertThat(thrown)
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("Relation not found for user ID: " + user.getId() + " and film ID: " + film.getId());
+
+        verify(relationRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("[E] Throw exception when user or film is null")
+    void should_throw_an_exception_when_user_or_film_is_null() {
+        // Arrange
+        Long userId = null;
+        Long filmId = null;
+
+        // Act
+        Throwable thrown = catchThrowable(() -> userFilmService.removeFilmFromFavorite(userId, filmId));
+
+        // Assert
+        assertThat(thrown)
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("User ID and film ID must not be null");
+
+        verify(relationRepository, never()).save(any());
     }
 }

@@ -1,14 +1,19 @@
 package com.itinov.movie_api.controller;
 
+import com.itinov.movie_api.dto.FilmDTO;
+import com.itinov.movie_api.model.FilmSortBy;
 import com.itinov.movie_api.service.UserFilmService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.Positive;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @Validated
@@ -48,4 +53,15 @@ public class UserFilmController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @GetMapping("/{userId}/favorites")
+    public ResponseEntity<List<FilmDTO>> getFavoriteFilms(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "RELEASE_DATE") FilmSortBy sortBy,
+            @RequestParam(defaultValue = "DESC") Sort.Direction direction
+    ) {
+        List<FilmDTO> result = userFilmService.getFavoriteFilmsSorted(userId, sortBy, direction);
+        return ResponseEntity.ok(result);
+    }
+
 }

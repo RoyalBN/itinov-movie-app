@@ -1,15 +1,20 @@
 package com.itinov.movie_api.service;
 
+import com.itinov.movie_api.dto.FilmDTO;
 import com.itinov.movie_api.model.Film;
+import com.itinov.movie_api.model.FilmSortBy;
 import com.itinov.movie_api.model.User;
 import com.itinov.movie_api.model.UserFilmRelation;
 import com.itinov.movie_api.repository.FilmRepository;
 import com.itinov.movie_api.repository.UserFilmRelationRepository;
 import com.itinov.movie_api.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class UserFilmService {
@@ -65,5 +70,60 @@ public class UserFilmService {
         relation.setFavorite(false);
         relationRepository.save(relation);
     }
+
+    //public List<FilmDTO> getFavoriteFilmsSortedByReleaseDate(Long userId) {
+    //    User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+    //    List<UserFilmRelation> relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateAsc(user);
+    //
+    //    return relations.stream()
+    //            .map(this::mapToFilmDTO)
+    //            .collect(Collectors.toList());
+    //
+    //}
+    //
+    //public List<FilmDTO> getFavoriteFilmsSortedByRatingDesc(Long userId) {
+    //    User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+    //    List<UserFilmRelation> relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_RatingDesc(user);
+    //
+    //    return relations.stream()
+    //            .map(this::mapToFilmDTO)
+    //            .collect(Collectors.toList());
+    //}
+
+    public List<FilmDTO> getFavoriteFilmsSorted(Long userId, FilmSortBy sortBy, Sort.Direction direction) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+
+        List<UserFilmRelation> relations;
+
+        if (sortBy == FilmSortBy.RATING && direction == Sort.Direction.DESC) {
+            relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_RatingDesc(user);
+        } else if (sortBy == FilmSortBy.RATING && direction == Sort.Direction.ASC) {
+            relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_RatingAsc(user);
+        } else if (sortBy == FilmSortBy.RELEASE_DATE && direction == Sort.Direction.DESC) {
+            relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateDesc(user);
+        } else {
+            relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateAsc(user);
+        }
+
+        return relations.stream()
+                .map(this::mapToFilmDTO)
+                .collect(Collectors.toList());
+    }
+
+    private FilmDTO mapToFilmDTO(UserFilmRelation relation) {
+        Film film = relation.getFilm();
+
+        return FilmDTO.builder()
+                .id(film.getId())
+                .title(film.getTitle())
+                .rating(film.getRating())
+                .releaseDate(film.getReleaseDate())
+                .posterUrl(film.getPosterUrl())
+                .isFavorite(relation.isFavorite())
+                .hasBeenWatched(relation.isHasBeenWatched())
+                .build();
+    }
+
 
 }

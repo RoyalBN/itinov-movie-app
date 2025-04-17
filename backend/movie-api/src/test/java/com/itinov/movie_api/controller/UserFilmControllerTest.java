@@ -80,7 +80,7 @@ class UserFilmControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        verify(userFilmService, times(1)).addFilmToFavorite(EXISTING_USER_ID, EXISTING_FILM_ID);
+        verify(userFilmService, times(1)).toggleFavoriteStatus(EXISTING_USER_ID, EXISTING_FILM_ID);
     }
 
     @Test
@@ -88,14 +88,14 @@ class UserFilmControllerTest {
     void should_return_404_when_user_not_found() throws Exception {
         // Arrange
         doThrow(new EntityNotFoundException("User not found with id: " + NON_EXISTING_ID))
-                .when(userFilmService).addFilmToFavorite(anyLong(), anyLong());
+                .when(userFilmService).toggleFavoriteStatus(anyLong(), anyLong());
 
         // Act & Assert
         mockMvc.perform(post(BASE_URL, NON_EXISTING_ID, EXISTING_FILM_ID)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
-        verify(userFilmService, times(1)).addFilmToFavorite(anyLong(), anyLong());
+        verify(userFilmService, times(1)).toggleFavoriteStatus(anyLong(), anyLong());
     }
 
     @Test
@@ -104,14 +104,14 @@ class UserFilmControllerTest {
         // Arrange
         doThrow(new EntityNotFoundException("Film not found with id: " + NON_EXISTING_ID))
                 .when(userFilmService)
-                .addFilmToFavorite(EXISTING_USER_ID, NON_EXISTING_ID);
+                .toggleFavoriteStatus(EXISTING_USER_ID, NON_EXISTING_ID);
 
         // Act & Assert
         mockMvc.perform(post(BASE_URL, EXISTING_USER_ID, NON_EXISTING_ID)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
-        verify(userFilmService, times(1)).addFilmToFavorite(EXISTING_USER_ID, NON_EXISTING_ID);
+        verify(userFilmService, times(1)).toggleFavoriteStatus(EXISTING_USER_ID, NON_EXISTING_ID);
     }
 
     @Test
@@ -119,14 +119,14 @@ class UserFilmControllerTest {
     void should_return_400_when_invalid_request() throws Exception {
         // Arrange
         doThrow(new IllegalArgumentException("Invalid request"))
-                .when(userFilmService).addFilmToFavorite(NON_EXISTING_ID, NON_EXISTING_ID);
+                .when(userFilmService).toggleFavoriteStatus(NON_EXISTING_ID, NON_EXISTING_ID);
 
         // Act & Assert
         mockMvc.perform(post(BASE_URL, NON_EXISTING_ID, NON_EXISTING_ID)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
 
-        verify(userFilmService, times(1)).addFilmToFavorite(anyLong(), anyLong());
+        verify(userFilmService, times(1)).toggleFavoriteStatus(anyLong(), anyLong());
     }
 
     @Test

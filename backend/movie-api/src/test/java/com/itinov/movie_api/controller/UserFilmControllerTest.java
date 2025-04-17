@@ -26,7 +26,6 @@ import java.util.List;
 import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(UserFilmController.class)
 class UserFilmControllerTest {
@@ -39,7 +38,6 @@ class UserFilmControllerTest {
 
     private FilmDTO film1;
     private FilmDTO film2;
-
 
     @Autowired
     private MockMvc mockMvc;
@@ -339,7 +337,7 @@ class UserFilmControllerTest {
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        verify(userFilmService).markFilmAsWatched(EXISTING_USER_ID, EXISTING_FILM_ID);
+        verify(userFilmService).toggleFilmAsWatched(EXISTING_USER_ID, EXISTING_FILM_ID);
     }
 
     @Test
@@ -350,7 +348,28 @@ class UserFilmControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
 
-        verify(userFilmService).markFilmAsWatched(EXISTING_USER_ID, EXISTING_FILM_ID);
+        verify(userFilmService).toggleFilmAsWatched(EXISTING_USER_ID, EXISTING_FILM_ID);
     }
 
+    @Test
+    @DisplayName("[N] Return list of watched films")
+    void should_return_list_of_watched_films() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get("/api/users/{userId}/films/watched", EXISTING_USER_ID)
+                .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(userFilmService).getWatchedFilms(EXISTING_USER_ID);
+    }
+
+    @Test
+    @DisplayName("[N] Return list of unwatched films")
+    void should_return_list_of_unwatched_films() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get("/api/users/{userId}/films/unwatched", EXISTING_USER_ID)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(userFilmService).getUnwatchedFilms(EXISTING_USER_ID);
+    }
 }

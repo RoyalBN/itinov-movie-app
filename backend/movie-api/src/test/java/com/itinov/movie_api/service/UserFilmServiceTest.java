@@ -376,7 +376,7 @@ public class UserFilmServiceTest {
         when(relationRepository.findByUserAndFilm(user, film)).thenReturn(Optional.of(relation));
 
         // Act
-        userFilmService.markFilmAsWatched(userId, filmId);
+        userFilmService.toggleFilmAsWatched(userId, filmId);
 
         // Assert
         assertThat(relation.isHasBeenWatched()).isTrue();
@@ -404,7 +404,7 @@ public class UserFilmServiceTest {
         when(relationRepository.findByUserAndFilm(user, film)).thenReturn(Optional.of(relation));
 
         // Act
-        userFilmService.markFilmAsWatched(userId, filmId);
+        userFilmService.toggleFilmAsWatched(userId, filmId);
 
         // Assert
         assertThat(relation.isHasBeenWatched()).isFalse();
@@ -412,8 +412,44 @@ public class UserFilmServiceTest {
         verify(relationRepository, times(1)).save(relation);
     }
 
-    // [N] Return list of watched films
+    @Test
+    @DisplayName("[N] Return list of watched films")
+    void should_return_list_of_watched_films() {
+        // Arrange
+        Film film2 = Film.builder().title("Film B").rating(9.0).build();
+        Film film3 = Film.builder().title("Film C").rating(7.0).build();
 
-    // [N] Return list of unwatched films
+        UserFilmRelation rel2 = UserFilmRelation.builder().user(user).film(film2).isFavorite(true).hasBeenWatched(true).build();
+        UserFilmRelation rel3 = UserFilmRelation.builder().user(user).film(film3).isFavorite(true).hasBeenWatched(true).build();
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(relationRepository.findByUserAndHasBeenWatchedTrue(user)).thenReturn(List.of(rel2, rel3));
+
+        // Act
+        List<FilmDTO> result = userFilmService.getWatchedFilms(user.getId());
+
+        // Assert
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getTitle()).isEqualTo("Film B");
+        assertThat(result.get(1).getTitle()).isEqualTo("Film C");
+    }
+
+    @Test
+    @DisplayName("[N] Return list of unwatched films")
+    void should_return_list_of_unwatched_films() {
+        // Arrange
+        Film film1 = Film.builder().title("Film A").rating(8.2).build();
+        UserFilmRelation rel1 = UserFilmRelation.builder().user(user).film(film1).isFavorite(true).hasBeenWatched(false).build();
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(relationRepository.findByUserAndHasBeenWatchedFalse(user)).thenReturn(List.of(rel1));
+
+        // Act
+        List<FilmDTO> result = userFilmService.getUnwatchedFilms(user.getId());
+
+        // Assert
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getTitle()).isEqualTo("Film A");
+    }
 
 }

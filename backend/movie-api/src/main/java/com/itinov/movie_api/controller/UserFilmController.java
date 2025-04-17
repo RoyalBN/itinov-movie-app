@@ -5,8 +5,6 @@ import com.itinov.movie_api.model.FilmSortBy;
 import com.itinov.movie_api.service.UserFilmService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.Positive;
-import org.antlr.v4.runtime.misc.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -65,12 +63,28 @@ public class UserFilmController {
     }
 
     @PatchMapping("/{userId}/films/{filmId}/watched")
-    public ResponseEntity<Void> markFilmAsWatched(
+    public ResponseEntity<Void> toggleFilmAsWatched(
             @PathVariable @Positive(message = "ID must be positive") Long userId,
             @PathVariable @Positive(message = "ID must be positive") Long filmId
     ) {
-        userFilmService.markFilmAsWatched(userId, filmId);
+        userFilmService.toggleFilmAsWatched(userId, filmId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/{userId}/films/watched")
+    public ResponseEntity<List<FilmDTO>> getWatchedFilms(
+            @PathVariable @Positive(message = "ID must be positive") Long userId
+    ) {
+        List<FilmDTO> result = userFilmService.getWatchedFilms(userId);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/{userId}/films/unwatched")
+    public ResponseEntity<List<FilmDTO>> getUnwatchedFilms(
+            @PathVariable @Positive(message = "ID must be positive") Long userId
+    ) {
+        List<FilmDTO> result = userFilmService.getUnwatchedFilms(userId);
+        return ResponseEntity.ok(result);
     }
 
 }

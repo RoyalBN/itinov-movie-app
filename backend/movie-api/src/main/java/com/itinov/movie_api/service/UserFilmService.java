@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -109,7 +108,7 @@ public class UserFilmService {
     }
 
 
-    public void markFilmAsWatched(Long userId, Long filmId) {
+    public void toggleFilmAsWatched(Long userId, Long filmId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
         Film film = filmRepository.findById(filmId).orElseThrow(() -> new EntityNotFoundException("Film not found with id: " + filmId));
 
@@ -120,5 +119,23 @@ public class UserFilmService {
         relation.setHasBeenWatched(!newWatchStatus);
         relation.setWatchedAt(newWatchStatus ? null : LocalDateTime.now());
         relationRepository.save(relation);
+    }
+
+    public List<FilmDTO> getWatchedFilms(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+        List<UserFilmRelation> relations = relationRepository.findByUserAndHasBeenWatchedTrue(user);
+
+        return relations.stream()
+                .map(this::mapToFilmDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<FilmDTO> getUnwatchedFilms(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
+        List<UserFilmRelation> relations = relationRepository.findByUserAndHasBeenWatchedFalse(user);
+
+        return relations.stream()
+                .map(this::mapToFilmDTO)
+                .collect(Collectors.toList());
     }
 }

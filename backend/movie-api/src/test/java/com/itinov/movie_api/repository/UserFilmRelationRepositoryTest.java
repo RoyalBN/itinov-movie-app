@@ -28,7 +28,7 @@ class UserFilmRelationRepositoryTest {
 
     @Autowired
     private TestEntityManager entityManager;
-
+    
     @Autowired
     private UserFilmRelationRepository repository;
 
@@ -217,6 +217,38 @@ class UserFilmRelationRepositoryTest {
         assertThat(updatedRelation.get().isFavorite()).isTrue();
         assertThat(updatedRelation.get().isHasBeenWatched()).isFalse();
         assertThat(updatedRelation.get().getWatchedAt()).isNull();
+    }
+
+    @Test
+    @DisplayName("[N] Return list of watched film")
+    void should_return_list_of_watched_film() {
+        // Arrange
+        persistRelation(true, true, film1);
+        persistRelation(true, false, film2);
+
+        // Act
+        List<UserFilmRelation> foundRelation = repository.findByUserAndHasBeenWatchedTrue(user);
+
+        // Assert
+        assertThat(foundRelation).hasSize(1);
+        assertThat(foundRelation.get(0).getFilm().getTitle()).isEqualTo("Film A");
+        assertThat(foundRelation.get(0).isHasBeenWatched()).isTrue();
+    }
+
+    @Test
+    @DisplayName("[N] Return list of unwatched film")
+    void should_return_list_of_unwatched_film() {
+        // Arrange
+        persistRelation(true, true, film1);
+        persistRelation(true, false, film2);
+
+        // Act
+        List<UserFilmRelation> foundRelation = repository.findByUserAndHasBeenWatchedFalse(user);
+
+        // Assert
+        assertThat(foundRelation).hasSize(1);
+        assertThat(foundRelation.get(0).getFilm().getTitle()).isEqualTo("Film B");
+        assertThat(foundRelation.get(0).isHasBeenWatched()).isFalse();
     }
 
 }

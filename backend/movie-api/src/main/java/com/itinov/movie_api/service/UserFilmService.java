@@ -7,9 +7,11 @@ import com.itinov.movie_api.repository.FilmRepository;
 import com.itinov.movie_api.repository.UserFilmRelationRepository;
 import com.itinov.movie_api.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+@Service
 public class UserFilmService {
 
     private UserRepository userRepository;

@@ -4,6 +4,7 @@ import com.itinov.movie_api.service.UserFilmService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.constraints.Positive;
 import org.antlr.v4.runtime.misc.NotNull;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;

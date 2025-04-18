@@ -21,11 +21,13 @@ import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Sort;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -249,8 +251,25 @@ public class UserFilmServiceTest {
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateAsc(user)).thenReturn(List.of(rel1, rel2));
-        when(mapper.mapToFilmDTO(rel1)).thenReturn(new FilmDTO(rel1.getFilm().getTitle(), film1.getRating(), film1.getReleaseDate(), film1.getPosterUrl()));
-        when(mapper.mapToFilmDTO(film2)).thenReturn(new FilmDTO(film2.getTitle(), film2.getRating(), film2.getReleaseDate(), film2.getPosterUrl()));
+        when(mapper.mapToFilmDTO(rel1))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film1.getTitle())
+                                .rating(film1.getRating())
+                                .releaseDate(film1.getReleaseDate())
+                                .posterUrl(film1.getPosterUrl())
+                                .build()
+                );
+
+        when(mapper.mapToFilmDTO(rel2))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film2.getTitle())
+                                .rating(film2.getRating())
+                                .releaseDate(film2.getReleaseDate())
+                                .posterUrl(film2.getPosterUrl())
+                                .build()
+                        );
 
         // Act
         List<FilmDTO> result = userFilmService.getFavoriteFilmsSorted(user.getId(), FilmSortBy.RELEASE_DATE, Sort.Direction.ASC);
@@ -286,6 +305,26 @@ public class UserFilmServiceTest {
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateDesc(user)).thenReturn(List.of(rel2, rel1));
 
+        when(mapper.mapToFilmDTO(rel1))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film1.getTitle())
+                                .rating(film1.getRating())
+                                .releaseDate(film1.getReleaseDate())
+                                .posterUrl(film1.getPosterUrl())
+                                .build()
+                );
+
+        when(mapper.mapToFilmDTO(rel2))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film2.getTitle())
+                                .rating(film2.getRating())
+                                .releaseDate(film2.getReleaseDate())
+                                .posterUrl(film2.getPosterUrl())
+                                .build()
+                );
+
         // Act
         List<FilmDTO> result = userFilmService.getFavoriteFilmsSorted(user.getId(), FilmSortBy.RELEASE_DATE, Sort.Direction.DESC);
 
@@ -293,6 +332,37 @@ public class UserFilmServiceTest {
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getTitle()).isEqualTo("Film B");
         assertThat(result.get(1).getTitle()).isEqualTo("Film A");
+    }
+
+    @Test
+    @DisplayName("[N] Return empty list when no favorite films found")
+    void should_return_empty_list_when_no_favorite_films_found() {
+        // Arrange
+        User user = User.builder().id(1L).build();
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateAsc(user)).thenReturn(Collections.emptyList());
+
+        // Act
+        List<FilmDTO> result = userFilmService.getFavoriteFilmsSorted(user.getId(), FilmSortBy.RELEASE_DATE, Sort.Direction.ASC);
+
+        // Assert
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @DisplayName("[E] Throw exception when user does not exist")
+    void should_throw_exception_when_user_does_not_exist_in_getFavoriteFilmsSorted() {
+        // Arrange
+        Long userId = 42L;
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // Act
+        Throwable thrown = catchThrowable(() -> userFilmService.getFavoriteFilmsSorted(userId, FilmSortBy.RELEASE_DATE, Sort.Direction.ASC));
+
+        // Assert
+        assertThat(thrown)
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("User not found with id: " + userId);
     }
 
     @Test
@@ -319,6 +389,26 @@ public class UserFilmServiceTest {
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_RatingAsc(user)).thenReturn(List.of(rel1, rel2));
+
+        when(mapper.mapToFilmDTO(rel1))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film1.getTitle())
+                                .rating(film1.getRating())
+                                .releaseDate(film1.getReleaseDate())
+                                .posterUrl(film1.getPosterUrl())
+                                .build()
+                );
+
+        when(mapper.mapToFilmDTO(rel2))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film2.getTitle())
+                                .rating(film2.getRating())
+                                .releaseDate(film2.getReleaseDate())
+                                .posterUrl(film2.getPosterUrl())
+                                .build()
+                );
 
         // Act
         List<FilmDTO> result = userFilmService.getFavoriteFilmsSorted(user.getId(), FilmSortBy.RATING, Sort.Direction.ASC);
@@ -353,6 +443,26 @@ public class UserFilmServiceTest {
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_RatingDesc(user)).thenReturn(List.of(rel2, rel1));
+
+        when(mapper.mapToFilmDTO(rel1))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film1.getTitle())
+                                .rating(film1.getRating())
+                                .releaseDate(film1.getReleaseDate())
+                                .posterUrl(film1.getPosterUrl())
+                                .build()
+                );
+
+        when(mapper.mapToFilmDTO(rel2))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film2.getTitle())
+                                .rating(film2.getRating())
+                                .releaseDate(film2.getReleaseDate())
+                                .posterUrl(film2.getPosterUrl())
+                                .build()
+                );
 
         // Act
         List<FilmDTO> result = userFilmService.getFavoriteFilmsSorted(user.getId(), FilmSortBy.RATING, Sort.Direction.DESC);
@@ -420,6 +530,26 @@ public class UserFilmServiceTest {
     }
 
     @Test
+    @DisplayName("[N] Should handle case when relation does not exist")
+    void should_handle_no_relation_case() {
+        // Arrange
+        Long userId = 1L;
+        Long filmId = 10L;
+        User user = User.builder().id(userId).build();
+        Film film = Film.builder().id(filmId).build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(filmRepository.findById(filmId)).thenReturn(Optional.of(film));
+        when(relationRepository.findByUserAndFilm(user, film)).thenReturn(Optional.empty());
+
+        // Act
+        userFilmService.toggleFilmAsWatched(userId, filmId);
+
+        // Assert
+        verify(relationRepository, times(1)).save(any(UserFilmRelation.class));
+    }
+
+    @Test
     @DisplayName("[N] Return list of watched films")
     void should_return_list_of_watched_films() {
         // Arrange
@@ -431,6 +561,26 @@ public class UserFilmServiceTest {
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(relationRepository.findByUserAndHasBeenWatchedTrue(user)).thenReturn(List.of(rel2, rel3));
+
+        when(mapper.mapToFilmDTO(rel2))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film2.getTitle())
+                                .rating(film2.getRating())
+                                .releaseDate(film2.getReleaseDate())
+                                .posterUrl(film2.getPosterUrl())
+                                .build()
+                );
+
+        when(mapper.mapToFilmDTO(rel3))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film3.getTitle())
+                                .rating(film3.getRating())
+                                .releaseDate(film3.getReleaseDate())
+                                .posterUrl(film3.getPosterUrl())
+                                .build()
+                );
 
         // Act
         List<FilmDTO> result = userFilmService.getWatchedFilms(user.getId());
@@ -450,6 +600,16 @@ public class UserFilmServiceTest {
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(relationRepository.findByUserAndHasBeenWatchedFalse(user)).thenReturn(List.of(rel1));
+
+        when(mapper.mapToFilmDTO(rel1))
+                .thenReturn(
+                        FilmDTO.builder()
+                                .title(film1.getTitle())
+                                .rating(film1.getRating())
+                                .releaseDate(film1.getReleaseDate())
+                                .posterUrl(film1.getPosterUrl())
+                                .build()
+                );
 
         // Act
         List<FilmDTO> result = userFilmService.getUnwatchedFilms(user.getId());

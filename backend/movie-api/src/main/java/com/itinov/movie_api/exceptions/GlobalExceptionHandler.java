@@ -1,5 +1,6 @@
 package com.itinov.movie_api.exceptions;
 
+import com.itinov.movie_api.dto.ErrorCodes;
 import com.itinov.movie_api.dto.ErrorResponse;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
@@ -25,7 +26,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.badRequest()
                 .body(ErrorResponse.builder()
-                        .code("VALIDATION_ERROR")
+                        .code(ErrorCodes.VALIDATION_ERROR)
                         .message(message)
                         .build()
                 );
@@ -41,7 +42,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInternalError(RuntimeException ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
                 ErrorResponse.builder()
-                        .code("INTERNAL_ERROR")
+                        .code(ErrorCodes.INTERNAL_ERROR)
                         .message(ex.getMessage())
                         .build()
         );
@@ -51,7 +52,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleNotFound(EntityNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
                 ErrorResponse.builder()
-                        .code("NOT_FOUND")
+                        .code(ErrorCodes.NOT_FOUND)
                         .message(ex.getMessage())
                         .build()
         );
@@ -61,8 +62,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadRequest(IllegalArgumentException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                 ErrorResponse.builder()
-                        .code("BAD_REQUEST")
+                        .code(ErrorCodes.BAD_REQUEST)
                         .message(ex.getMessage())
+                        .build()
+        );
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                ErrorResponse.builder()
+                        .code(ErrorCodes.UNEXPECTED_ERROR)
+                        .message("An unexpected error occurred.")
                         .build()
         );
     }

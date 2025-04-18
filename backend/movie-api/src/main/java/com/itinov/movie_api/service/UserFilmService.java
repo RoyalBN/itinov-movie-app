@@ -85,25 +85,29 @@ public class UserFilmService {
         relationRepository.save(relation);
     }
 
-
     public List<FilmDTO> getFavoriteFilmsSorted(Long userId, FilmSortBy sortBy, Sort.Direction direction) {
         User user = getUserOrThrow(userId);
 
-        List<UserFilmRelation> relations;
-
-        if (sortBy == FilmSortBy.RATING && direction == Sort.Direction.DESC) {
-            relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_RatingDesc(user);
-        } else if (sortBy == FilmSortBy.RATING && direction == Sort.Direction.ASC) {
-            relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_RatingAsc(user);
-        } else if (sortBy == FilmSortBy.RELEASE_DATE && direction == Sort.Direction.DESC) {
-            relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateDesc(user);
-        } else {
-            relations = relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateAsc(user);
-        }
+        List<UserFilmRelation> relations = switch (sortBy) {
+            case RATING -> direction.isAscending()
+                    ? relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_RatingAsc(user)
+                    : relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_RatingDesc(user);
+            default -> direction.isAscending()
+                    ? relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateAsc(user)
+                    : relationRepository.findByUserAndIsFavoriteTrueOrderByFilm_ReleaseDateDesc(user);
+        };
 
         return relations.stream()
                 .map(mapper::mapToFilmDTO)
                 .collect(Collectors.toList());
+    }
+
+    private UserFilmRelation createNewRelation(User user, Film film) {
+        return UserFilmRelation.builder()
+                .user(user)
+                .film(film)
+                .hasBeenWatched(false)
+                .build();
     }
 
     public void toggleFilmAsWatched(Long userId, Long filmId) {
@@ -111,7 +115,8 @@ public class UserFilmService {
         Film film = getFilmOrThrow(filmId);
 
         UserFilmRelation relation = relationRepository.findByUserAndFilm(user, film)
-                .orElseThrow(() -> new EntityNotFoundException("Relation not found for user ID: " + userId + " and film ID: " + filmId));
+                .orElseGet(() -> createNewRelation(user, film));
+                //.orElseThrow(() -> new EntityNotFoundException("Relation not found for user ID: " + userId + " and film ID: " + filmId));
 
         boolean newWatchStatus = relation.isHasBeenWatched();
         relation.setHasBeenWatched(!newWatchStatus);
